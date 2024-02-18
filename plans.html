@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootstrap Payment Form</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+        .payment-form {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        .planBody {
+            height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body class="planBody">
+
+    <div class="container">
+        <div class="card payment-form mx-auto mt-5" style="max-width: 500px;">
+            <div class="card-body text-center">
+                <h2 class="mb-4">Premium Plan</h2>
+                <h4 class="mb-4">₹ 10/- Only</h4>
+                <button type="button" class="btn btn-primary btn-sm" id="payButton">Pay and Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Razorpay JavaScript SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <!-- JavaScript to handle Razorpay payment -->
+    <script>
+
+        const server = 'https://testbackend-u2af.onrender.com';
+
+        var payButton = document.getElementById('payButton');
+
+        payButton.addEventListener('click', async function () {
+
+            try {
+                var subscriptionId = await fetchSubscriptionId();
+                var userData = JSON.parse(localStorage.getItem('formData'));
+                userData.subscription_id = subscriptionId;
+
+                var options = {
+                    key: "rzp_live_yV2X8cZUev03Xb",
+                    amount: 1000,
+                    currency: "INR",
+                    name: "Bharat POS",
+                    description: "Premium Plan",
+                    subscription_id: subscriptionId,
+
+                    handler: async function (response) {
+                        var requestData = {
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_subscription_id: response.razorpay_subscription_id,
+                            razorpay_signature: response.razorpay_signature,
+                            userData: userData
+                        };
+
+                        // Make a POST request to the API
+                        const data = await postData(`${server}/api/v1/subscription/paymentVerification`, requestData);
+                        console.log(data)
+                        if (data.status === 200) {
+                            window.location.href = 'paymentSuccess.html'
+                        }
+                        else {
+                            window.location.href = 'paymentFail.html'
+                        }
+
+                    },
+                    theme: {
+                        color: "#528FF0"
+                    }
+                };
+
+                var rzp = new Razorpay(options);
+                rzp.open();
+            } catch (error) {
+                console.error('Error fetching subscription ID:', error);
+            }
+        });
+
+        async function fetchSubscriptionId() {
+            var response = await fetch(`${server}/api/v1/subscription/new`);
+            var data = await response.json();
+            return data.subscription_id;
+        }
+
+        async function postData(url, data) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            return response;
+        }
+
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+    <!-- Bootstrap JS (optional, if needed for certain components or functionality) -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
